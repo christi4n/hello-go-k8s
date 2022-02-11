@@ -7,8 +7,7 @@
     image_name: chrisnt5/hello-go:1.0.2
 
   pre_tasks:
-  tasks:
-  # Build the hello-go Docker image
+    # Build the hello-go Docker image
     - name: Get existing image hash.
       shell: |
         nerdctl images -q {{ image_name }}
@@ -18,5 +17,24 @@
       shell: |
         nerdctl build -t {{ image_name }} ../hello-go
       when: not image_hash.stdout
+
+  tasks:
+
+    - name: Create a k8s namespace
+      kubernetes.core.k8s:
+        state: present
+        src: ../hello-go/k8s/namespace.yml
+
+    - name: Create a deployment for hello-go in the specified ns
+      kubernetes.core.k8s:
+        state: present
+        src: ../hello-go/k8s/deployment.yml
+
+    - name: Create a service to expose our deployment
+      kubernetes.core.k8s:
+        state: present
+        src: ../hello-go/k8s/service.yml
+
+  
       
 
