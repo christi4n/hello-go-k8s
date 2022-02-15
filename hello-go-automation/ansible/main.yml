@@ -1,0 +1,59 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: '{{ ansible_playbook_python }}'
+    docker_registry_image_upload: yes
+    docker_registry: index.docker.io/v1/
+    docker_registry_name: docker.io
+    app_name: hello-go
+    app_version: 1.0.2
+  
+  vars_files:
+    - vars/registry-credentials.yml 
+
+  pre_tasks:
+    # Build the hello-go Docker image
+    - name: Get existing image hash.
+      shell: |
+        nerdctl images -q {{ docker_registry_name }}/{{ docker_registry_username }}/{{ app_name }}:{{ app_version }}
+      register: image_hash
+      changed_when: false
+
+    - name: Build image if it's not already built.
+      shell: "nerdctl build -t {{ docker_registry_name }}/{{ docker_registry_username }}/{{ app_name }}:{{ app_version }} ../../hello-go"
+      when: not image_hash.stdout
+
+    - name: login to docker registry
+      shell: |
+        nerdctl login -u {{ docker_registry_username }} -p {{ docker_token }} {{ docker_registry }}
+      when: docker_registry_image_upload
+
+    - name: push docker image to docker-registry {{ docker_registry }}
+      shell: |
+        nerdctl push {{ docker_registry_name }}/{{ docker_registry_username }}/{{ app_name }}:{{ app_version }}
+      when: docker_registry_image_upload
+
+  tasks:
+
+    - name: Create a k8s namespace
+      kubernetes.core.k8s:
+        state: present
+        src: ../../hello-go/k8s/namespace.yml
+
+    - name: Create a deployment for hello-go in the specified ns
+      kubernetes.core.k8s:
+        state: present
+        src: ../../hello-go/k8s/deployment.yml
+
+    - name: Create a service to expose our deployment
+      kubernetes.core.k8s:
+        state: present
+        src: ../../hello-go/k8s/service.yml
+
+  post_tasks:
+    - name: Log out of DockerHub
+      shell: |
+        docker logout {{ docker_registry }}
+      when: docker_registry_image_upload
