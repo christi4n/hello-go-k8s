@@ -32,6 +32,10 @@ You set first the password for the new Ansible vault then, edit the vault with y
 
 You need to have the password on your file system to decrypt the vault. Mine is in ansible/.vault_pass in the project but it is excluded from git versioning.
 
+### View the credentials
+
+    ansible-vault view ansible/vars/registry-credentials.yml --vault-password-file=ansible/.vault_pass
+
 ## Run Ansible playbook
 
     ansible-playbook -i $HOME/.ansible/path/to/inventory --vault-password-file=ansible/.vault_pass ansible/main.yml -vvv
