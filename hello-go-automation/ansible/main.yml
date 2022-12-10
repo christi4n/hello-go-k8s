@@ -8,7 +8,7 @@
     docker_registry: index.docker.io/v1/
     docker_registry_name: docker.io
     app_name: hello-go
-    app_version: 1.0.2
+    app_version: 1.0.3
   
   vars_files:
     - vars/registry-credentials.yml 
